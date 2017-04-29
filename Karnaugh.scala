@@ -14,80 +14,163 @@ case class Assignment(name: String, value: TruthVal) {
   override def toString = s"$name := $value"
 }
 
-case class TruthTable(entries: List[TruthTable.Entry]) {
+case class TruthTable(entries: List[TruthTable.Entry]) { self =>
   import TruthTable._
 
-  override def toString =
-    entries.map {
-      case (input: Input, tv: Output) =>
-        input.map(_.toString).mkString(" | ") + " -> " + tv.toString
-    }.mkString("\n")
+  override def toString = entries.mkString("\n")
+
+  def vars: List[String] = entries.map(_.vars).headOption.getOrElse(Nil)
+
+  def karnaughMap: String = {
+    val vars = self.vars
+
+    val entriesByInputSet = entries.groupBy(_.input.toSet)
+
+    def showTable(rowVars: List[String],
+                  colVars: List[String]): String = {
+      val rowValues = TruthTable.grayCode(rowVars)
+      val colValues = TruthTable.grayCode(colVars)
+
+      def assignmentValueString(as : List[Assignment]) =
+          as.map(_.value).mkString
+
+      // Example:
+      //
+      // AB\CD 00 01 11 10 
+      //    00  0  0  1  1
+      //    01  1  1  1  1
+      //    11  0  1  1  1
+      //    10  1  1  0  1
+
+      // The split variable names shown in the upper left.
+      val splitNames: String = (rowVars ++ "\\" ++ colVars).mkString
+
+      def formatRowHdr(hdr: String) = s"%${splitNames.size}s".format(hdr)
+      def formatRowEntry(entry: String) = s"%${colVars.size}s".format(entry)
+
+      var hdr = (splitNames :: colValues.map {
+        c => formatRowEntry(assignmentValueString(c))
+      }).mkString(" ")
+      val tableRows = rowValues.map {
+        r => {
+          val rowHdr = formatRowHdr(assignmentValueString(r))
+          val row = colValues.map {
+            c => {
+              val assignments = r ++ c
+              // Dies if we screwed up and this isn't a real entry.
+              val entry = entriesByInputSet(assignments.toSet).head
+              val result = entry.value
+              formatRowEntry(result.toString)
+            }
+          }
+          (rowHdr :: row).mkString(" ")
+        }
+      }
+      (hdr :: tableRows).mkString("\n")
+    }
+
+    val split = if (vars.size % 2 == 0) (vars.size / 2) else (vars.size / 2 + 1)
+    vars.splitAt(split) match {
+      case (Nil, Nil) => "[empty]"
+      case (rows, cols) => showTable(rows, cols)
+    }
+  }
 }
 
 object TruthTable {
+  import Exp._
+
   type Input = List[Assignment]
   type Output = TruthVal
-  type Entry = Tuple2[Input, Output]
+
+  case class Entry(input: List[Assignment], value: TruthVal) {
+    val byName = input.groupBy(_.name)
+
+    val vars: List[String] = input.map(_.name)
+
+    override def toString = input.mkString(" | ") + " -> " + value.toString
+  }
+
+  // In: [A := T, B := F, C := T, D := DC]
+  // Out: And(A, Not(B), C, DC)
+  // TODO: Could just drop the DC's
+  def toConjunction(assignments: List[Assignment]) = And(assignments.map {
+    case Assignment(name, v) => v match {
+      case T => Variable(name)
+      case F => Not(Variable(name))
+      case DC => Literal(DC)
+    }
+  })
 
   def full(xs: String*): List[Input] = full(xs.toList)
-  def full(xs: List[String]): List[Input] = xs.foldRight[List[Input]](List(Nil)) {
-    (x, as) => as.map((x := F) :: _) ++ as.map((x := T) :: _)
-  }
+  def full(xs: List[String]): List[Input] =
+    xs.foldRight[List[Input]](List(Nil)) {
+      (x, as) => as.map((x := F) :: _) ++ as.map((x := T) :: _)
+    }
 
   def grayCode(xs: String*): List[Input] = grayCode(xs.toList)
-  def grayCode(xs: List[String]): List[Input] = xs.foldRight[List[Input]](List(Nil)) {
-    (x, as) => as.map((x := F) :: _) ++ as.reverse.map((x := T) :: _)
-  }
+  def grayCode(xs: List[String]): List[Input] = 
+    xs.foldRight[List[Input]](List(Nil)) {
+      (x, as) => as.map((x := F) :: _) ++ as.reverse.map((x := T) :: _)
+    }
 }
 
 sealed trait Exp { self =>
   import Exp._
 
-  def or(other: Exp) = Or(self, other)
-  def and(other: Exp) = And(self, other)
+  def or(other: Exp) = Or(List(self, other))
+  def and(other: Exp) = And(List(self, other))
 
+  // TODO: Minimal parens for precedence.
   override def toString = self match {
     case Variable(v) => v
     case Not(e) => "¬" + e.toString
-    case Or(l, r) => l.toString + " ∨ " + r.toString
-    case And(l, r) => l.toString + " ∧ " + r.toString
+    case Or(es) => es.mkString(" ∨ ")
+    case And(es) => es.mkString(" ∧ ")
     case Literal(v) => v.toString
   }
 
-  def varsOf: Set[String] = self match {
+  def vars: Set[String] = self match {
     case Variable(v) => Set(v)
-    case Not(e) => e.varsOf
-    case Or(l, r) => l.varsOf union r.varsOf
-    case And(l, r) => l.varsOf union r.varsOf
+    case Not(e) => e.vars
+    case Or(subs) => subs.map(_.vars).toSet.flatten
+    case And(subs) => subs.map(_.vars).toSet.flatten
     case Literal(_) => Set.empty
   }
 
-  def toTruthTable: TruthTable = {
-    val inputs = TruthTable.full(self.varsOf.toList.sorted)
+  def cost: Int = self match {
+    case Variable(v) => 0
+    case Not(e) => 1
+    case Or(subs) => 1 + subs.map(_.cost).sum
+    case And(subs) => 1 + subs.map(_.cost).sum
+    case Literal(_) => 0
+  }
 
-    def eval (exp: Exp, input: TruthTable.Input): TruthVal = exp match {
-      case Variable(v) =>
-        input.find(_.name == v).map(_.value).getOrElse(DC)
-      case Not(e) => eval(e, input) match {
-        case T => F
-        case F => T
-        case DC => DC
-      }
-      case Or(l, r) => (eval(l, input), eval(r, input)) match {
-        case (F, F) => F
-        case (_, T) | (T , _) => T
-        case _ => DC
-      }
-      case And(l, r) => (eval(l, input), eval(r, input)) match {
-        case (T, T) => T
-        case (_, F) | (F , _) => F
-        case _ => DC
-      }
-      case Literal(l) => l
+  def eval (input: TruthTable.Input): TruthVal = self match {
+    case Variable(v) =>
+      input.find(_.name == v).map(_.value).getOrElse(DC)
+    case Not(e) => e.eval(input) match {
+      case T => F
+      case F => T
+      case DC => DC
     }
+    case Or(subs) => subs.map(_.eval(input)).foldLeft[TruthVal](F) {
+      case (T, _) | (_, T) => T
+      case (DC, _) | (_, DC) => DC
+      case (F, F) => F
+    }
+    case And(subs) => subs.map(_.eval(input)).foldLeft[TruthVal](T) {
+      case (F, _) | (_, F) => F
+      case (DC, _) | (_, DC) => DC
+      case (T, T) => T
+    }
+    case Literal(l) => l
+  }
 
+  def toTruthTable: TruthTable = {
+    val inputs = TruthTable.full(self.vars.toList.sorted)
     TruthTable(inputs.map {
-      input => (input, eval(self, input))
+      input => TruthTable.Entry(input, self.eval(input))
     })
   }
 }
@@ -95,8 +178,8 @@ sealed trait Exp { self =>
 object Exp {
   case class Variable(name: String) extends Exp
   case class Not(e: Exp) extends Exp
-  case class Or(l: Exp, r: Exp) extends Exp
-  case class And(l: Exp, r: Exp) extends Exp
+  case class Or(subs: List[Exp]) extends Exp
+  case class And(subs: List[Exp]) extends Exp
   case class Literal(tv: TruthVal) extends Exp
 }
 
