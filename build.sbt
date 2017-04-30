@@ -10,4 +10,8 @@ scalacOptions ++= Seq(
   "-deprecation"
 )
 
+libraryDependencies ++= Seq(
+  "com.lihaoyi" %% "fastparse" % "0.4.2"
+)
+
 tutSettings
