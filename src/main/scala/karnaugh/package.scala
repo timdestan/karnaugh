@@ -2,7 +2,7 @@ import fastparse.core._
 
 package object karnaugh {
   implicit class StringExtensions(self: String) {
-    def :=(value: TruthVal) = Assignment(self, value)
+    def :=(value: TruthValue) = Assignment(self, value)
   }
 
   implicit class EitherExtensions[E, A](self: Either[E, A]) {

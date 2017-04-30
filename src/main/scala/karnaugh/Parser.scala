@@ -8,19 +8,19 @@
     val lowercase = P(CharIn('a' to 'z'))
     val uppercase = P(CharIn('A' to 'Z'))
     val varName: Parser[String] = P(lowercase | uppercase).rep(min = 1).!
-    val truthValue: Parser[TruthVal] =
+    val truthValue: Parser[TruthValue] =
       P("0".!.map(_ => F) |
         "1".!.map(_ => T) |
         "DC".!.map(_ => DC))
 
     val tableHdr: Parser[Seq[String]] = P(varName.rep(sep = " "))
-    val tableRow: Parser[Seq[TruthVal]] = P(truthValue.rep(sep = " "))
+    val tableRow: Parser[Seq[TruthValue]] = P(truthValue.rep(sep = " "))
 
     var rawParser: Parser[
       (Seq[String],        // Inputs
        Seq[String],        // Outputs
        Seq[String],        // Table Header
-       Seq[Seq[TruthVal]]) // Table Rows
+       Seq[Seq[TruthValue]]) // Table Rows
     ] = P(space ~
           "Inputs" ~/
           space ~
@@ -51,13 +51,13 @@
     }
 
   case class Var(name: String, isInput: Boolean, index: Int) {
-    def :=(tv: TruthVal) = Assignment(name, tv)
+    def :=(tv: TruthValue) = Assignment(name, tv)
   }
 
   def resolveTables(inputs: Set[String],
                     outputs: Set[String],
                     header: Vector[String],
-                    rows: Vector[Vector[TruthVal]]):
+                    rows: Vector[Vector[TruthValue]]):
                         Either[String, Map[String, TruthTable]] =
     resolveVars(inputs, outputs, header).flatMap {
       varTable => rows.map(resolveRow(_, varTable)).sequence
@@ -93,7 +93,7 @@
   //     2 => Var("C", false, 2))
   // Example Output:
   // Right(Map("C" => Entry(List(A := T, B := F), T)))
-  def resolveRow(row: Vector[TruthVal],
+  def resolveRow(row: Vector[TruthValue],
                  varMap: Map[Int, Var])
                      : Either[String, Map[String, TruthTable.Entry]] = {
     row.zipWithIndex.map {

@@ -1,16 +1,16 @@
 package karnaugh
 
-sealed trait TruthVal
+sealed trait TruthValue
 
-case object T extends TruthVal {
+case object T extends TruthValue {
   override def toString = "1"
 }
-case object F extends TruthVal {
+case object F extends TruthValue {
   override def toString = "0"
 }
-case object DC extends TruthVal
+case object DC extends TruthValue
 
-case class Assignment(name: String, value: TruthVal) {
+case class Assignment(name: String, value: TruthValue) {
   override def toString = s"$name := $value"
 }
 
@@ -81,9 +81,9 @@ object TruthTable {
   import Exp._
 
   type Input = List[Assignment]
-  type Output = TruthVal
+  type Output = TruthValue
 
-  case class Entry(input: List[Assignment], value: TruthVal) {
+  case class Entry(input: List[Assignment], value: TruthValue) {
     val byName = input.groupBy(_.name)
 
     val vars: List[String] = input.map(_.name)
@@ -139,7 +139,7 @@ sealed trait Exp { self =>
     case Literal(_) => 0
   }
 
-  def eval (input: TruthTable.Input): TruthVal = self match {
+  def eval (input: TruthTable.Input): TruthValue = self match {
     case Variable(v) =>
       input.find(_.name == v).map(_.value).getOrElse(DC)
     case Not(e) => e.eval(input) match {
@@ -147,12 +147,12 @@ sealed trait Exp { self =>
       case F => T
       case DC => DC
     }
-    case Or(subs) => subs.map(_.eval(input)).foldLeft[TruthVal](F) {
+    case Or(subs) => subs.map(_.eval(input)).foldLeft[TruthValue](F) {
       case (T, _) | (_, T) => T
       case (DC, _) | (_, DC) => DC
       case (F, F) => F
     }
-    case And(subs) => subs.map(_.eval(input)).foldLeft[TruthVal](T) {
+    case And(subs) => subs.map(_.eval(input)).foldLeft[TruthValue](T) {
       case (F, _) | (_, F) => F
       case (DC, _) | (_, DC) => DC
       case (T, T) => T
@@ -173,11 +173,11 @@ object Exp {
   case class Not(e: Exp) extends Exp
   case class Or(subs: List[Exp]) extends Exp
   case class And(subs: List[Exp]) extends Exp
-  case class Literal(tv: TruthVal) extends Exp
+  case class Literal(tv: TruthValue) extends Exp
 }
 
 object Implicits {
   implicit def toVar(str: String) = Exp.Variable(str)
-  implicit def toLit(tv: TruthVal) = Exp.Literal(tv)
+  implicit def toLit(tv: TruthValue) = Exp.Literal(tv)
   def not(e: Exp) = Exp.Not(e)  // Not so implicit
 }
