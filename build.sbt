@@ -9,3 +9,5 @@ scalacOptions ++= Seq(
   "-language:_",
   "-deprecation"
 )
+
+tutSettings
