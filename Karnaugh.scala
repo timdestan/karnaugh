@@ -36,7 +36,7 @@ case class TruthTable(entries: List[TruthTable.Entry]) { self =>
 
       // Example:
       //
-      // AB\CD 00 01 11 10 
+      // AB\CD 00 01 11 10
       //    00  0  0  1  1
       //    01  1  1  1  1
       //    11  0  1  1  1
@@ -109,7 +109,7 @@ object TruthTable {
     }
 
   def grayCode(xs: String*): List[Input] = grayCode(xs.toList)
-  def grayCode(xs: List[String]): List[Input] = 
+  def grayCode(xs: List[String]): List[Input] =
     xs.foldRight[List[Input]](List(Nil)) {
       (x, as) => as.map((x := F) :: _) ++ as.reverse.map((x := T) :: _)
     }
@@ -121,14 +121,7 @@ sealed trait Exp { self =>
   def or(other: Exp) = Or(List(self, other))
   def and(other: Exp) = And(List(self, other))
 
-  // TODO: Minimal parens for precedence.
-  override def toString = self match {
-    case Variable(v) => v
-    case Not(e) => "¬" + e.toString
-    case Or(es) => es.mkString(" ∨ ")
-    case And(es) => es.mkString(" ∧ ")
-    case Literal(v) => v.toString
-  }
+  override def toString = pp.Tree(self).toString
 
   def vars: Set[String] = self match {
     case Variable(v) => Set(v)
