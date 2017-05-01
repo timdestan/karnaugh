@@ -1,5 +1,6 @@
   package karnaugh
 
+  import cats.implicits._
   import fastparse.all._
 
   object TruthTableParser {
@@ -60,7 +61,7 @@
                     rows: Vector[Vector[TruthValue]]):
                         Either[String, Map[String, TruthTable]] =
     resolveVars(inputs, outputs, header).flatMap {
-      varTable => rows.map(resolveRow(_, varTable)).sequence
+      varTable => rows.map(resolveRow(_, varTable)).sequenceU
     }.map {
       maps => maps.flatMap(_.toSeq)
                   .groupBy(_._1)
@@ -70,7 +71,7 @@
   def resolveVars(inputs: Set[String],
                   outputs: Set[String],
                   header: Vector[String]) : Either[String, Map[Int, Var]] = {
-    header.zipWithIndex.map {
+    header.zipWithIndex.traverseU {
       case (name, i) =>
         if (inputs(name))
           Right(Var(name, true, i))
@@ -78,7 +79,7 @@
           Right(Var(name, false, i))
         else
           Left(s"Undefined variable $name in header.")
-    }.sequence.map {
+    }.map {
       // Assumes no duplicates. Would be friendlier to detect and report the
       // error.
       vars => vars.groupBy(_.index).mapValues(_.head)
@@ -96,12 +97,12 @@
   def resolveRow(row: Vector[TruthValue],
                  varMap: Map[Int, Var])
                      : Either[String, Map[String, TruthTable.Entry]] = {
-    row.zipWithIndex.map {
+    row.zipWithIndex.traverseU {
       case (truthValue, i) => varMap.get(i) match {
         case None => Left("Row longer than headers")
         case Some(variable) => Right((variable, variable := truthValue))
       }
-    }.sequence.map {
+    }.map {
       vars => {
         val (inputs, outputs) = vars.partition(_._1.isInput)
         val inputAssignments = inputs.map(_._2).toList
