@@ -1,5 +1,23 @@
 # Karnaugh
 
+This project contains an implementation of Karnaugh maps. A Karnaugh map is a
+visualization of a truth table for a boolean expression. The values of the
+inputs are written in the headers of the rows and columns of the table, while
+the values of the outputs are written in the cells.
+
+If there are more than 2 variables, some rows/columns will represent the values
+of more than one variable. So if the columns are for variables `C`, `D`, and
+`E`, for example, there would be one column for `010`.
+
+The order of values is a special binary ordering called a Gray Code, which
+ensures that each successive value only differ in one bit. This makes them handy
+for spotting patterns in the expression and can be used to minimize the number
+of logic gates needed to implement a circuit.
+
+## Example
+
+The following should be directly runnable in the SBT REPL.
+
 ```scala
 scala> import karnaugh._
 import karnaugh._
