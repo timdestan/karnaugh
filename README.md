@@ -41,4 +41,7 @@ abc\de 00 01 11 10
    101  1  0  0  0
    100  1  0  0  1
 
+scala> tt.minterms
+res1: karnaugh.Exp = (¬a ∧ ¬b ∧ ¬c ∧ ¬d ∧ ¬e) ∨ (¬a ∧ ¬b ∧ ¬c ∧ ¬d ∧ e) ∨ (¬a ∧ ¬b ∧ ¬c ∧ d ∧ ¬e) ∨ (¬a ∧ ¬b ∧ ¬c ∧ d ∧ e) ∨ (¬a ∧ ¬b ∧ c ∧ ¬d ∧ ¬e) ∨ (¬a ∧ ¬b ∧ c ∧ ¬d ∧ e) ∨ (¬a ∧ ¬b ∧ c ∧ d ∧ ¬e) ∨ (¬a ∧ ¬b ∧ c ∧ d ∧ e) ∨ (¬a ∧ b ∧ ¬c ∧ ¬d ∧ ¬e) ∨ (¬a ∧ b ∧ ¬c ∧ ¬d ∧ e) ∨ (¬a ∧ b ∧ ¬c ∧ d ∧ ¬e) ∨ (¬a ∧ b ∧ ¬c ∧ d ∧ e) ∨ (¬a ∧ b ∧ c ∧ ¬d ∧ ¬e) ∨ (¬a ∧ b ∧ c ∧ ¬d ∧ e) ∨ (¬a ∧ b ∧ c ∧ d ∧ ¬e) ∨ (¬a ∧ b ∧ c ∧ d ∧ e) ∨ (a ∧ ¬b ∧ ¬c ∧ ¬d ∧ ¬e) ∨ (a ∧ ¬b ∧ ¬c ∧ ¬d ∧ e) ∨ (a ∧ ¬b ∧ ¬c ∧ d ∧ ¬e) ∨ (a ∧ ¬b ∧ ¬c ∧ d ∧ e) ∨ (a ∧ ¬b ∧ c ∧ ¬d ∧ ¬e) ∨ (a ∧ ¬b ∧ c ∧ ¬d ∧ e) ∨ (a ∧ ¬b ∧ c ∧ d ∧ ¬e) ∨ (a ∧ ¬b ∧ c ∧ d ∧ e) ∨ (a ∧ b ∧ ¬c ∧ ¬d ∧ ¬e) ∨ (a ∧ b ∧ ¬c ∧ ¬d ∧ e) ∨ (a ∧ b ∧ ¬c ∧ d ∧ ¬e) ∨ (a ∧ b ∧ ¬c ∧ d ∧ e) ∨ (a ∧ b ∧ c ∧ ¬d ∧ ¬e) ∨ (a ∧ b ∧ c ∧ ¬d ∧ e) ∨ (a ∧ b ∧ c ∧ d ∧ ¬e) ∨ (a ∧ b ∧ c ∧ d...
+  
 ```

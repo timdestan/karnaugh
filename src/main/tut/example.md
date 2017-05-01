@@ -7,7 +7,8 @@ import karnaugh._
 import karnaugh.Implicits._
 val e = ("a" or "b") and not (("c" and "d") or "e")
 val tt = e.toTruthTable
-println(tt.karnaughMap)
+tt.karnaughMap
+tt.minterms
 
 ```
 
@@ -40,9 +41,9 @@ A B Cin Cout S
 val tables = TruthTableParser.parse(tableConfig).valueOrDie
 
 val carryOutTable = tables("Cout")
-println(carryOutTable.karnaughMap)
+carryOutTable.karnaughMap
 
 val sumTable = tables("S")
-println(sumTable.karnaughMap)
+sumTable.karnaughMap
 
 ```

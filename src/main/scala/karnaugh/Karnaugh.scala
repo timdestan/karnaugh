@@ -21,6 +21,8 @@ case class TruthTable(entries: List[TruthTable.Entry]) { self =>
 
   def vars: List[String] = entries.map(_.vars).headOption.getOrElse(Nil)
 
+  def minterms: Exp = Exp.Or(entries.map(_.toMinterm))
+
   def karnaughMap: String = {
     val vars = self.vars
 
@@ -89,18 +91,15 @@ object TruthTable {
     val vars: List[String] = input.map(_.name)
 
     override def toString = input.mkString(" | ") + " -> " + value.toString
-  }
 
-  // In: [A := T, B := F, C := T, D := DC]
-  // Out: And(A, Not(B), C, DC)
-  // TODO: Could just drop the DC's
-  def toConjunction(assignments: List[Assignment]) = And(assignments.map {
-    case Assignment(name, v) => v match {
-      case T => Variable(name)
-      case F => Not(Variable(name))
-      case DC => Literal(DC)
-    }
-  })
+    def toMinterm: Exp = And(input.map {
+      case Assignment(name, v) => v match {
+        case T => Variable(name)
+        case F => Not(Variable(name))
+        case DC => Literal(DC)
+      }
+    })
+  }
 
   def full(xs: String*): List[Input] = full(xs.toList)
   def full(xs: List[String]): List[Input] =
