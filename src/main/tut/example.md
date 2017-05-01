@@ -9,6 +9,7 @@ val e = ("a" or "b") and not (("c" and "d") or "e")
 val tt = e.toTruthTable
 tt.karnaughMap
 tt.minterms
+tt.maxterms
 
 ```
 

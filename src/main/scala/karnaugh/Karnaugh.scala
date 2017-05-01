@@ -24,6 +24,9 @@ case class TruthTable(entries: List[TruthTable.Entry]) { self =>
   def minterms: Exp =
     Exp.Or(entries.filter(_.value == T).map(_.toMinterm))
 
+  def maxterms: Exp =
+    Exp.And(entries.filter(_.value == F).map(_.toMaxterm))
+
   def karnaughMap: String = {
     val vars = self.vars
 
@@ -97,6 +100,14 @@ object TruthTable {
       case Assignment(name, v) => v match {
         case T => Variable(name)
         case F => Not(Variable(name))
+        case DC => Literal(DC)
+      }
+    })
+
+    def toMaxterm: Exp = Or(input.map {
+      case Assignment(name, v) => v match {
+        case T => Not(Variable(name))
+        case F => Variable(name)
         case DC => Literal(DC)
       }
     })
