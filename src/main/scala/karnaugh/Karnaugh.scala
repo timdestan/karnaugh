@@ -21,7 +21,8 @@ case class TruthTable(entries: List[TruthTable.Entry]) { self =>
 
   def vars: List[String] = entries.map(_.vars).headOption.getOrElse(Nil)
 
-  def minterms: Exp = Exp.Or(entries.map(_.toMinterm))
+  def minterms: Exp =
+    Exp.Or(entries.filter(_.value == T).map(_.toMinterm))
 
   def karnaughMap: String = {
     val vars = self.vars
