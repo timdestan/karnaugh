@@ -100,14 +100,14 @@ object TruthTable {
     def toMinterm: Exp = And(assignments.map {
       case Assignment(name, v) => v match {
         case T => Variable(name)
-        case F => Not(Variable(name))
+        case F => ~Variable(name)
         case DC => Literal(DC)
       }
     })
 
     def toMaxterm: Exp = Or(assignments.map {
       case Assignment(name, v) => v match {
-        case T => Not(Variable(name))
+        case T => ~Variable(name)
         case F => Variable(name)
         case DC => Literal(DC)
       }
@@ -132,6 +132,7 @@ sealed trait Exp { self =>
 
   def or(other: Exp) = Or(List(self, other))
   def and(other: Exp) = And(List(self, other))
+  def unary_~(): Exp = Not(self)
 
   override def toString = pp.Tree(self).toString
 
@@ -191,5 +192,4 @@ object Exp {
 object Implicits {
   implicit def toVar(str: String) = Exp.Variable(str)
   implicit def toLit(tv: TruthValue) = Exp.Literal(tv)
-  def not(e: Exp) = Exp.Not(e)  // Not so implicit
 }

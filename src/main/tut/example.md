@@ -5,7 +5,7 @@ Simple example:
 
 import karnaugh._
 import karnaugh.Implicits._
-val e = ("a" or "b") and not (("c" and "d") or "e")
+val e = ("a" or "b") and ~(("c" and "d") or "e")
 val tt = e.toTruthTable
 tt.karnaughMap
 tt.minterms

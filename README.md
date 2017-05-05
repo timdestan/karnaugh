@@ -25,7 +25,7 @@ import karnaugh._
 scala> import karnaugh.Implicits._
 import karnaugh.Implicits._
 
-scala> val e = ("a" or "b") and not (("c" and "d") or "e")
+scala> val e = ("a" or "b") and ~(("c" and "d") or "e")
 e: karnaugh.Exp.And = (a ∨ b) ∧ ¬((c ∧ d) ∨ e)
 
 scala> val tt = e.toTruthTable
