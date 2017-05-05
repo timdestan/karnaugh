@@ -30,7 +30,7 @@ case class TruthTable(entries: List[TruthTable.Entry]) { self =>
   def karnaughMap: String = {
     val vars = self.vars
 
-    val entriesByInputSet = entries.groupBy(_.input.toSet)
+    val entriesByInputSet = entries.groupBy(_.assignments.toSet)
 
     def showTable(rowVars: List[String],
                   colVars: List[String]): String = {
@@ -89,14 +89,15 @@ object TruthTable {
   type Input = List[Assignment]
   type Output = TruthValue
 
-  case class Entry(input: List[Assignment], value: TruthValue) {
-    val byName = input.groupBy(_.name)
+  case class Entry(assignments: List[Assignment], value: TruthValue) {
+    val byName = assignments.groupBy(_.name)
 
-    val vars: List[String] = input.map(_.name)
+    val vars: List[String] = assignments.map(_.name)
 
-    override def toString = input.mkString(" | ") + " -> " + value.toString
+    override def toString =
+        assignments.mkString(" | ") + " -> " + value.toString
 
-    def toMinterm: Exp = And(input.map {
+    def toMinterm: Exp = And(assignments.map {
       case Assignment(name, v) => v match {
         case T => Variable(name)
         case F => Not(Variable(name))
@@ -104,7 +105,7 @@ object TruthTable {
       }
     })
 
-    def toMaxterm: Exp = Or(input.map {
+    def toMaxterm: Exp = Or(assignments.map {
       case Assignment(name, v) => v match {
         case T => Not(Variable(name))
         case F => Variable(name)
