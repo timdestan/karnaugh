@@ -6,7 +6,7 @@ Simple example:
 import karnaugh._
 import karnaugh.Implicits._
 val e = ("a" or "b") and ~(("c" and "d") or "e")
-val tt = e.toTruthTable
+val tt = e.toTruthTable.valueOrDie
 tt.karnaughMap
 tt.minterms
 tt.maxterms

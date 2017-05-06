@@ -1,6 +1,8 @@
 import fastparse.core._
 
 package object karnaugh {
+  type Result[A] = Either[String, A]
+
   implicit class StringExtensions(self: String) {
     def :=(value: TruthValue) = Assignment(self, value)
   }
@@ -13,7 +15,7 @@ package object karnaugh {
   }
 
   implicit class ParsedExtensions[A, Elem, Repr](self: Parsed[A, Elem, Repr]) {
-    def toEither : Either[String, A] =
+    def toResult : Result[A] =
       self match {
         case Parsed.Success(v, _) => Right(v)
         case failure => Left(failure.toString)

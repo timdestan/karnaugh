@@ -66,3 +66,9 @@ scala> tt.maxterms
 res2: karnaugh.Exp = (a ∨ b ∨ c ∨ d ∨ e) ∧ (a ∨ b ∨ c ∨ d ∨ ¬e) ∧ (a ∨ b ∨ c ∨ ¬d ∨ e) ∧ (a ∨ b ∨ c ∨ ¬d ∨ ¬e) ∧ (a ∨ b ∨ ¬c ∨ d ∨ e) ∧ (a ∨ b ∨ ¬c ∨ d ∨ ¬e) ∧ (a ∨ b ∨ ¬c ∨ ¬d ∨ e) ∧ (a ∨ b ∨ ¬c ∨ ¬d ∨ ¬e) ∧ (a ∨ ¬b ∨ c ∨ d ∨ ¬e) ∧ (a ∨ ¬b ∨ c ∨ ¬d ∨ ¬e) ∧ (a ∨ ¬b ∨ ¬c ∨ d ∨ ¬e) ∧ (a ∨ ¬b ∨ ¬c ∨ ¬d ∨ e) ∧ (a ∨ ¬b ∨ ¬c ∨ ¬d ∨ ¬e) ∧ (¬a ∨ b ∨ c ∨ d ∨ ¬e) ∧ (¬a ∨ b ∨ c ∨ ¬d ∨ ¬e) ∧ (¬a ∨ b ∨ ¬c ∨ d ∨ ¬e) ∧ (¬a ∨ b ∨ ¬c ∨ ¬d ∨ e) ∧ (¬a ∨ b ∨ ¬c ∨ ¬d ∨ ¬e) ∧ (¬a ∨ ¬b ∨ c ∨ d ∨ ¬e) ∧ (¬a ∨ ¬b ∨ c ∨ ¬d ∨ ¬e) ∧ (¬a ∨ ¬b ∨ ¬c ∨ d ∨ ¬e) ∧ (¬a ∨ ¬b ∨ ¬c ∨ ¬d ∨ e) ∧ (¬a ∨ ¬b ∨ ¬c ∨ ¬d ∨ ¬e)
 
 ```
+
+## Self-reminder:
+
+Generated tut documentation is in target/scala-2.12/tut/example.md
+
+TODO: Generate this file automatically using tut.

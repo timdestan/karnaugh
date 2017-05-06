@@ -41,8 +41,8 @@ object TruthTableParser {
 
   // Each output variable gets its own truth table in the result, keyed by the
   // output variable name.
-  def parse(text: String): Either[String, Map[String, TruthTable]] =
-    rawParser.parse(text).toEither.flatMap {
+  def parse(text: String): Result[Map[String, TruthTable]] =
+    rawParser.parse(text).toResult.flatMap {
       case (inputs, outputs, hdr, rows) =>
         resolveTables(inputs.toSet,
                       outputs.toSet,
@@ -57,8 +57,8 @@ object TruthTableParser {
   def resolveTables(inputs: Set[String],
                     outputs: Set[String],
                     header: Vector[String],
-                    rows: Vector[Vector[TruthValue]])
-    : Either[String, Map[String, TruthTable]] =
+                    rows: Vector[Vector[TruthValue]]):
+                        Result[Map[String, TruthTable]] =
     resolveVars(inputs, outputs, header)
       .flatMap { varTable =>
         rows.map(resolveRow(_, varTable)).sequenceU
@@ -68,11 +68,12 @@ object TruthTableParser {
           .flatMap(_.toSeq)
           .groupBy(_._1)
           .mapValues(v => TruthTable(v.map(_._2).toList))
-      }
+          .sequenceU
+      }.flatten
 
   def resolveVars(inputs: Set[String],
                   outputs: Set[String],
-                  header: Vector[String]): Either[String, Map[Int, Var]] = {
+                  header: Vector[String]): Result[Map[Int, Var]] = {
     header.zipWithIndex
       .traverseU {
         case (name, i) =>
@@ -101,7 +102,7 @@ object TruthTableParser {
   // Right(Map("C" => Entry(List(A := T, B := F), T)))
   def resolveRow(
       row: Vector[TruthValue],
-      varMap: Map[Int, Var]): Either[String, Map[String, TruthTable.Entry]] = {
+      varMap: Map[Int, Var]): Result[Map[String, TruthTable.Entry]] = {
     row.zipWithIndex
       .traverseU {
         case (truthValue, i) =>

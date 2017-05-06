@@ -14,31 +14,30 @@ case class Assignment(name: String, value: TruthValue) {
   override def toString = s"$name := $value"
 }
 
-case class TruthTable(entries: List[TruthTable.Entry]) { self =>
+
+// TODO: This should enforce that the table is "full" (has entries for all 2^n
+//       combinations of input vars) or karnaugh map blows up. This is always
+//       true when generating from an expression but not otherwise.
+class TruthTable(vars: List[String],
+                 entries: List[TruthTable.RawEntry]) { self =>
   import TruthTable._
 
-  override def toString = entries.mkString("\n")
-
-  def vars: List[String] = entries.map(_.vars).headOption.getOrElse(Nil)
+  override def toString = entries.map(_.toEntry(vars)).mkString("\n")
 
   def minterms: Exp =
-    Exp.Or(entries.filter(_.value == T).map(_.toMinterm))
+    Exp.Or(entries.map(_.toEntry(vars)).filter(_.value == T).map(_.toMinterm))
 
   def maxterms: Exp =
-    Exp.And(entries.filter(_.value == F).map(_.toMaxterm))
+    Exp.And(entries.map(_.toEntry(vars)).filter(_.value == F).map(_.toMaxterm))
 
   def karnaughMap: String = {
-    val vars = self.vars
-
-    val entriesByInputSet = entries.groupBy(_.assignments.toSet)
+    val entriesByInputSet: Map[Set[TruthValue], List[RawEntry]] =
+      entries.groupBy(_.inputValues.toSet)
 
     def showTable(rowVars: List[String],
                   colVars: List[String]): String = {
-      val rowValues = TruthTable.grayCode(rowVars)
-      val colValues = TruthTable.grayCode(colVars)
-
-      def assignmentValueString(as : List[Assignment]) =
-          as.map(_.value).mkString
+      val rowValues = TruthTable.grayCode(rowVars).map(_.map(_.value))
+      val colValues = TruthTable.grayCode(colVars).map(_.map(_.value))
 
       // Example:
       //
@@ -55,18 +54,17 @@ case class TruthTable(entries: List[TruthTable.Entry]) { self =>
       def formatRowEntry(entry: String) = s"%${colVars.size}s".format(entry)
 
       var hdr = (splitNames :: colValues.map {
-        c => formatRowEntry(assignmentValueString(c))
+        c => formatRowEntry(c.mkString)
       }).mkString(" ")
       val tableRows = rowValues.map {
         r => {
-          val rowHdr = formatRowHdr(assignmentValueString(r))
+          val rowHdr = formatRowHdr(r.mkString)
           val row = colValues.map {
             c => {
-              val assignments = r ++ c
-              // Dies if we screwed up and this isn't a real entry.
-              val entry = entriesByInputSet(assignments.toSet).head
-              val result = entry.value
-              formatRowEntry(result.toString)
+              val values = r ++ c
+              // Dies if table is missing an entry for this set of inputs.
+              val entry = entriesByInputSet(values.toSet).head
+              formatRowEntry(entry.outputValue.toString)
             }
           }
           (rowHdr :: row).mkString(" ")
@@ -86,8 +84,34 @@ case class TruthTable(entries: List[TruthTable.Entry]) { self =>
 object TruthTable {
   import Exp._
 
-  type Input = List[Assignment]
-  type Output = TruthValue
+  def apply(entries: List[Entry]): Result[TruthTable] = {
+    // Validate that each entry has the same set of vars in the same order,
+    // and return that set of vars.
+    def validateVars(entries: List[Entry],
+                     vars: Option[List[String]])
+                        : Result[List[String]] = entries match {
+      case Nil => vars.toRight("No entries")
+      case x :: xs => vars match {
+        case None => validateVars(xs, Some(x.vars))
+        case s@Some(vars) =>
+          if (vars == x.vars) validateVars(xs, s)
+          else Left("Mismatched vars.")
+      }
+    }
+    for {
+      vars <- validateVars(entries, None)
+    } yield new TruthTable(vars, entries.map(_.toRawEntry))
+  }
+
+  // Entry that doesn't repeat the input vars in each row. Requires a truth
+  // table to interpret.
+  case class RawEntry(inputValues: List[TruthValue],
+                      outputValue: TruthValue) {
+    def toEntry(vars: List[String]) = Entry(assignments(vars), outputValue)
+
+    def assignments(vars: List[String]) =
+      vars.zip(inputValues).map((Assignment.apply(_,_)).tupled)
+  }
 
   case class Entry(assignments: List[Assignment], value: TruthValue) {
     val byName = assignments.groupBy(_.name)
@@ -96,6 +120,8 @@ object TruthTable {
 
     override def toString =
         assignments.mkString(" | ") + " -> " + value.toString
+
+    def toRawEntry = RawEntry(assignments.map(_.value), value)
 
     def toMinterm: Exp = And(assignments.map {
       case Assignment(name, v) => v match {
@@ -114,15 +140,15 @@ object TruthTable {
     })
   }
 
-  def full(xs: String*): List[Input] = full(xs.toList)
-  def full(xs: List[String]): List[Input] =
-    xs.foldRight[List[Input]](List(Nil)) {
+  def full(xs: String*): List[List[Assignment]] = full(xs.toList)
+  def full(xs: List[String]): List[List[Assignment]] =
+    xs.foldRight[List[List[Assignment]]](List(Nil)) {
       (x, as) => as.map((x := F) :: _) ++ as.map((x := T) :: _)
     }
 
-  def grayCode(xs: String*): List[Input] = grayCode(xs.toList)
-  def grayCode(xs: List[String]): List[Input] =
-    xs.foldRight[List[Input]](List(Nil)) {
+  def grayCode(xs: String*): List[List[Assignment]] = grayCode(xs.toList)
+  def grayCode(xs: List[String]): List[List[Assignment]] =
+    xs.foldRight[List[List[Assignment]]](List(Nil)) {
       (x, as) => as.map((x := F) :: _) ++ as.reverse.map((x := T) :: _)
     }
 }
@@ -152,20 +178,20 @@ sealed trait Exp { self =>
     case Literal(_) => 0
   }
 
-  def eval (input: TruthTable.Input): TruthValue = self match {
+  def eval (assignments: List[Assignment]): TruthValue = self match {
     case Variable(v) =>
-      input.find(_.name == v).map(_.value).getOrElse(DC)
-    case Not(e) => e.eval(input) match {
+      assignments.find(_.name == v).map(_.value).getOrElse(DC)
+    case Not(e) => e.eval(assignments) match {
       case T => F
       case F => T
       case DC => DC
     }
-    case Or(subs) => subs.map(_.eval(input)).foldLeft[TruthValue](F) {
+    case Or(subs) => subs.map(_.eval(assignments)).foldLeft[TruthValue](F) {
       case (T, _) | (_, T) => T
       case (DC, _) | (_, DC) => DC
       case (F, F) => F
     }
-    case And(subs) => subs.map(_.eval(input)).foldLeft[TruthValue](T) {
+    case And(subs) => subs.map(_.eval(assignments)).foldLeft[TruthValue](T) {
       case (F, _) | (_, F) => F
       case (DC, _) | (_, DC) => DC
       case (T, T) => T
@@ -173,7 +199,7 @@ sealed trait Exp { self =>
     case Literal(l) => l
   }
 
-  def toTruthTable: TruthTable = {
+  def toTruthTable: Result[TruthTable] = {
     val inputs = TruthTable.full(self.vars.toList.sorted)
     TruthTable(inputs.map {
       input => TruthTable.Entry(input, self.eval(input))
