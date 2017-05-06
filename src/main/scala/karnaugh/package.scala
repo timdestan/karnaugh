@@ -8,10 +8,7 @@ package object karnaugh {
   }
 
   implicit class EitherExtensions[E, A](self: Either[E, A]) {
-    def valueOrDie: A = self match {
-      case Left(e) => throw new Exception(e.toString)
-      case Right(a) => a
-    }
+    def valueOrDie: A = self.asInstanceOf[Right[E, A]].value
   }
 
   implicit class ParsedExtensions[A, Elem, Repr](self: Parsed[A, Elem, Repr]) {

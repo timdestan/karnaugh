@@ -31,13 +31,12 @@ class TruthTable(vars: List[String],
     Exp.And(entries.map(_.toEntry(vars)).filter(_.value == F).map(_.toMaxterm))
 
   def karnaughMap: String = {
-    val entriesByInputSet: Map[Set[TruthValue], List[RawEntry]] =
-      entries.groupBy(_.inputValues.toSet)
+    val entriesByInputValues = entries.groupBy(_.inputValues)
 
     def showTable(rowVars: List[String],
                   colVars: List[String]): String = {
-      val rowValues = TruthTable.grayCode(rowVars).map(_.map(_.value))
-      val colValues = TruthTable.grayCode(colVars).map(_.map(_.value))
+      val rowValues = TruthTable.grayCode(rowVars.size)
+      val colValues = TruthTable.grayCode(colVars.size)
 
       // Example:
       //
@@ -62,8 +61,8 @@ class TruthTable(vars: List[String],
           val row = colValues.map {
             c => {
               val values = r ++ c
-              // Dies if table is missing an entry for this set of inputs.
-              val entry = entriesByInputSet(values.toSet).head
+              // Dies if table is missing an entry for these inputs.
+              val entry = entriesByInputValues(values).head
               formatRowEntry(entry.outputValue.toString)
             }
           }
@@ -107,9 +106,9 @@ object TruthTable {
   // table to interpret.
   case class RawEntry(inputValues: List[TruthValue],
                       outputValue: TruthValue) {
-    def toEntry(vars: List[String]) = Entry(assignments(vars), outputValue)
+    def toEntry(vars: List[String]) = Entry(toAssignments(vars), outputValue)
 
-    def assignments(vars: List[String]) =
+    def toAssignments(vars: List[String]) =
       vars.zip(inputValues).map((Assignment.apply(_,_)).tupled)
   }
 
@@ -140,16 +139,14 @@ object TruthTable {
     })
   }
 
-  def full(xs: String*): List[List[Assignment]] = full(xs.toList)
-  def full(xs: List[String]): List[List[Assignment]] =
-    xs.foldRight[List[List[Assignment]]](List(Nil)) {
-      (x, as) => as.map((x := F) :: _) ++ as.map((x := T) :: _)
+  def full(n: Int): List[List[TruthValue]] =
+    (1 to n).foldRight[List[List[TruthValue]]](List(Nil)) {
+      (n, as) => as.map(F :: _) ++ as.map(T :: _)
     }
 
-  def grayCode(xs: String*): List[List[Assignment]] = grayCode(xs.toList)
-  def grayCode(xs: List[String]): List[List[Assignment]] =
-    xs.foldRight[List[List[Assignment]]](List(Nil)) {
-      (x, as) => as.map((x := F) :: _) ++ as.reverse.map((x := T) :: _)
+  def grayCode(n: Int): List[List[TruthValue]] =
+    (1 to n).foldRight[List[List[TruthValue]]](List(Nil)) {
+      (n, as) => as.map(F :: _) ++ as.reverse.map(T :: _)
     }
 }
 
@@ -199,11 +196,17 @@ sealed trait Exp { self =>
     case Literal(l) => l
   }
 
-  def toTruthTable: Result[TruthTable] = {
-    val inputs = TruthTable.full(self.vars.toList.sorted)
-    TruthTable(inputs.map {
-      input => TruthTable.Entry(input, self.eval(input))
-    })
+  def toTruthTable: TruthTable = {
+    val vars = self.vars.toList.sorted
+    val inputRows: List[List[TruthValue]] = TruthTable.full(vars.size)
+    new TruthTable(
+      vars,
+      inputRows.map {
+        inputRow =>
+          TruthTable.RawEntry(
+            inputRow,
+            self.eval(vars.zip(inputRow).map((Assignment.apply(_,_)).tupled)))
+      })
   }
 }
 

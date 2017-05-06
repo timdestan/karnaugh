@@ -1,19 +1,18 @@
-
-Simple example:
+### Simple example
 
 ```tut
 
 import karnaugh._
 import karnaugh.Implicits._
 val e = ("a" or "b") and ~(("c" and "d") or "e")
-val tt = e.toTruthTable.valueOrDie
+val tt = e.toTruthTable
 tt.karnaughMap
 tt.minterms
 tt.maxterms
 
 ```
 
-One-bit adder with carry:
+### One-bit adder with carry
 
 ```tut
 

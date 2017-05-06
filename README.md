@@ -14,9 +14,9 @@ ensures that each successive value only differ in one bit. This makes them handy
 for spotting patterns in the expression and can be used to minimize the number
 of logic gates needed to implement a circuit.
 
-## Example
+## Examples
 
-The following should be directly runnable in the SBT REPL.
+### Simple example
 
 ```scala
 scala> import karnaugh._
@@ -47,6 +47,7 @@ a := 0 | b := 1 | c := 1 | d := 0 | e := 1 -> 0
 a := 0 | b := 1 | c := 1 | d := 1 | e := 0 -> 0
 a := 0 | b := 1 | c := 1 | d := 1 | e := 1 -> 0
 a :...
+
 scala> tt.karnaughMap
 res0: String =
 abc\de 00 01 11 10
@@ -64,7 +65,110 @@ res1: karnaugh.Exp = (¬a ∧ b ∧ ¬c ∧ ¬d ∧ ¬e) ∨ (¬a ∧ b ∧ ¬c 
 
 scala> tt.maxterms
 res2: karnaugh.Exp = (a ∨ b ∨ c ∨ d ∨ e) ∧ (a ∨ b ∨ c ∨ d ∨ ¬e) ∧ (a ∨ b ∨ c ∨ ¬d ∨ e) ∧ (a ∨ b ∨ c ∨ ¬d ∨ ¬e) ∧ (a ∨ b ∨ ¬c ∨ d ∨ e) ∧ (a ∨ b ∨ ¬c ∨ d ∨ ¬e) ∧ (a ∨ b ∨ ¬c ∨ ¬d ∨ e) ∧ (a ∨ b ∨ ¬c ∨ ¬d ∨ ¬e) ∧ (a ∨ ¬b ∨ c ∨ d ∨ ¬e) ∧ (a ∨ ¬b ∨ c ∨ ¬d ∨ ¬e) ∧ (a ∨ ¬b ∨ ¬c ∨ d ∨ ¬e) ∧ (a ∨ ¬b ∨ ¬c ∨ ¬d ∨ e) ∧ (a ∨ ¬b ∨ ¬c ∨ ¬d ∨ ¬e) ∧ (¬a ∨ b ∨ c ∨ d ∨ ¬e) ∧ (¬a ∨ b ∨ c ∨ ¬d ∨ ¬e) ∧ (¬a ∨ b ∨ ¬c ∨ d ∨ ¬e) ∧ (¬a ∨ b ∨ ¬c ∨ ¬d ∨ e) ∧ (¬a ∨ b ∨ ¬c ∨ ¬d ∨ ¬e) ∧ (¬a ∨ ¬b ∨ c ∨ d ∨ ¬e) ∧ (¬a ∨ ¬b ∨ c ∨ ¬d ∨ ¬e) ∧ (¬a ∨ ¬b ∨ ¬c ∨ d ∨ ¬e) ∧ (¬a ∨ ¬b ∨ ¬c ∨ ¬d ∨ e) ∧ (¬a ∨ ¬b ∨ ¬c ∨ ¬d ∨ ¬e)
+```
 
+### One-bit adder with carry
+
+```scala
+scala> import karnaugh._
+import karnaugh._
+
+scala> import karnaugh.Implicits._
+import karnaugh.Implicits._
+
+scala> val tableConfig = """
+     | Inputs
+     | A B Cin
+     |
+     | Outputs
+     | Cout S
+     |
+     | Table
+     | A B Cin Cout S
+     | 0 0 0 0 0
+     | 0 0 1 0 1
+     | 0 1 0 0 1
+     | 0 1 1 1 0
+     | 1 0 0 0 1
+     | 1 0 1 1 0
+     | 1 1 0 1 0
+     | 1 1 1 1 1
+     | """
+tableConfig: String =
+"
+Inputs
+A B Cin
+
+Outputs
+Cout S
+
+Table
+A B Cin Cout S
+0 0 0 0 0
+0 0 1 0 1
+0 1 0 0 1
+0 1 1 1 0
+1 0 0 0 1
+1 0 1 1 0
+1 1 0 1 0
+1 1 1 1 1
+"
+
+scala> val tables = TruthTableParser.parse(tableConfig).valueOrDie
+tables: Map[String,karnaugh.TruthTable] =
+Map(Cout -> A := 0 | B := 0 | Cin := 0 -> 0
+A := 0 | B := 0 | Cin := 1 -> 0
+A := 0 | B := 1 | Cin := 0 -> 0
+A := 0 | B := 1 | Cin := 1 -> 1
+A := 1 | B := 0 | Cin := 0 -> 0
+A := 1 | B := 0 | Cin := 1 -> 1
+A := 1 | B := 1 | Cin := 0 -> 1
+A := 1 | B := 1 | Cin := 1 -> 1, S -> A := 0 | B := 0 | Cin := 0 -> 0
+A := 0 | B := 0 | Cin := 1 -> 1
+A := 0 | B := 1 | Cin := 0 -> 1
+A := 0 | B := 1 | Cin := 1 -> 0
+A := 1 | B := 0 | Cin := 0 -> 1
+A := 1 | B := 0 | Cin := 1 -> 0
+A := 1 | B := 1 | Cin := 0 -> 0
+A := 1 | B := 1 | Cin := 1 -> 1)
+
+scala> val carryOutTable = tables("Cout")
+carryOutTable: karnaugh.TruthTable =
+A := 0 | B := 0 | Cin := 0 -> 0
+A := 0 | B := 0 | Cin := 1 -> 0
+A := 0 | B := 1 | Cin := 0 -> 0
+A := 0 | B := 1 | Cin := 1 -> 1
+A := 1 | B := 0 | Cin := 0 -> 0
+A := 1 | B := 0 | Cin := 1 -> 1
+A := 1 | B := 1 | Cin := 0 -> 1
+A := 1 | B := 1 | Cin := 1 -> 1
+
+scala> carryOutTable.karnaughMap
+res3: String =
+AB\Cin 0 1
+    00 0 0
+    01 0 1
+    11 1 1
+    10 0 1
+
+scala> val sumTable = tables("S")
+sumTable: karnaugh.TruthTable =
+A := 0 | B := 0 | Cin := 0 -> 0
+A := 0 | B := 0 | Cin := 1 -> 1
+A := 0 | B := 1 | Cin := 0 -> 1
+A := 0 | B := 1 | Cin := 1 -> 0
+A := 1 | B := 0 | Cin := 0 -> 1
+A := 1 | B := 0 | Cin := 1 -> 0
+A := 1 | B := 1 | Cin := 0 -> 0
+A := 1 | B := 1 | Cin := 1 -> 1
+
+scala> sumTable.karnaughMap
+res4: String =
+AB\Cin 0 1
+    00 0 1
+    01 1 0
+    11 0 1
+    10 1 0
 ```
 
 ## Self-reminder:
