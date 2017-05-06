@@ -61,21 +61,21 @@ object TruthTableParser {
                         Result[Map[String, TruthTable]] =
     resolveVars(inputs, outputs, header)
       .flatMap { varTable =>
-        rows.map(resolveRow(_, varTable)).sequenceU
+        rows.map(resolveRow(_, varTable)).sequence
       }
       .map { maps =>
         maps
           .flatMap(_.toSeq)
           .groupBy(_._1)
           .mapValues(v => TruthTable(v.map(_._2).toList))
-          .sequenceU
+          .sequence
       }.flatten
 
   def resolveVars(inputs: Set[String],
                   outputs: Set[String],
                   header: Vector[String]): Result[Map[Int, Var]] = {
     header.zipWithIndex
-      .traverseU {
+      .traverse {
         case (name, i) =>
           if (inputs(name))
             Right(Var(name, true, i))
@@ -104,7 +104,7 @@ object TruthTableParser {
       row: Vector[TruthValue],
       varMap: Map[Int, Var]): Result[Map[String, TruthTable.Entry]] = {
     row.zipWithIndex
-      .traverseU {
+      .traverse {
         case (truthValue, i) =>
           varMap.get(i) match {
             case None => Left("Row longer than headers")

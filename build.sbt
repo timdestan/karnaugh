@@ -7,7 +7,8 @@ scalaVersion := "2.12.1"
 scalacOptions ++= Seq(
   "-feature",
   "-language:_",
-  "-deprecation"
+  "-deprecation",
+  "-Ypartial-unification"
 )
 
 libraryDependencies ++= Seq(
